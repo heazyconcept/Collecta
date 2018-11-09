@@ -5,17 +5,19 @@ Description: Extends WooCommerce by Adding the collecta payment gateway.
 Version: 1
 Author: Ezekiel Fadipe, O'sigla Resources
 Author URI: http://www.osigla.com.ng/
-*/
-if (!defined('ABSPATH'))
+ */
+if (!defined('ABSPATH')) {
     exit;
+}
 
 add_action('plugins_loaded', 'woocommerce_collecta_payment_init', 0);
 
 function woocommerce_collecta_payment_init()
 {
 
-    if (!class_exists('WC_Payment_Gateway'))
+    if (!class_exists('WC_Payment_Gateway')) {
         return;
+    }
 
     class WC_collecta_payment extends WC_Payment_Gateway
     {
@@ -24,10 +26,10 @@ function woocommerce_collecta_payment_init()
         {
             $this->collecta_payment_errors = new WP_Error();
 
-            $this->id           = 'collecta';
-            $this->icon         = apply_filters('woocommerce_collecta_payment_icon', plugins_url('images/logo.png', __FILE__));
+            $this->id = 'collecta';
+            $this->icon = apply_filters('woocommerce_collecta_payment_icon', plugins_url('images/logo.png', __FILE__));
             $this->method_title = 'collectapayment';
-            $this->has_fields   = false;
+            $this->has_fields = false;
             // Load the form fields.
             $this->init_form_fields();
 
@@ -35,57 +37,52 @@ function woocommerce_collecta_payment_init()
             $this->init_settings();
 
             // Define user set variables
-            $this->title           = $this->get_option('title');
-            $this->description     = $this->get_option('description');
-            $this->collecta_handle = $this->get_option('collecta_handle');
-            $this->secret_key      = $this->get_option('secret_key');
+            $this->title = $this->get_option('title');
+            $this->description = $this->get_option('description');
+            $this->merchant_id = $this->get_option('merchant_id');
+            $this->secret_key = $this->get_option('secret_key');
             // $this->wema_tranx_curr = $this->settings['wema_tranx_curr'];
             // $this->hashkey = $this->settings['hashkey'];
-            $this->redirect_url    = WC()->api_request_url('WC_collecta_payment');
+            $this->redirect_url = WC()->api_request_url('WC_collecta_payment');
 
-
-            $this->posturl = 'https://www.collecta.com.ng/pay/?i=' . $this->collecta_handle;
+            $this->posturl = 'https://app.collecta.com.ng/Pay/Pay/';
+            $this->confirmurl = "https://app.collecta.com.ng/api/Query/Status/";
             //                            $this->geturl = "https://apps.wemabank.com/wemamerchants/TransactionStatusService.asmx/GetTransactionDetailsJson";
             //Actions
             add_action('woocommerce_receipt_collecta', array(
                 $this,
-                'receipt_page'
+                'receipt_page',
             ));
             add_action('woocommerce_update_options_payment_gateways_' . $this->id, array(
                 $this,
-                'process_admin_options'
+                'process_admin_options',
             ));
 
             // Payment listener/API hook
             add_action('woocommerce_api_wc_collecta_gateway', array(
                 $this,
-                'check_collecta_response'
+                'check_collecta_response',
             ));
 
             //Display Transaction Reference on checkout
             add_action('before_woocommerce_pay', array(
                 $this,
-                'display_transaction_id'
+                'display_transaction_id',
             ));
 
-
-
-
             $this->msg['message'] = "";
-            $this->msg['class']   = "";
-
+            $this->msg['class'] = "";
 
             if (!$this->is_valid_for_use()) {
                 $this->enabled = false;
             }
-
 
         }
         public function is_valid_for_use()
         {
 
             if (!in_array(get_woocommerce_currency(), array(
-                'NGN'
+                'NGN',
             ))) {
                 $this->msg = 'Colleca Webpay doesn\'t support your store currency, set it to Nigerian Naira &#8358; <a href="' . get_bloginfo('wpurl') . '/wp-admin/admin.php?page=wc-settings&tab=general">here</a>';
                 return false;
@@ -101,7 +98,7 @@ function woocommerce_collecta_payment_init()
 
             if ($this->enabled == "yes") {
 
-                if (!($this->collecta_handle && $this->secret_key)) {
+                if (!($this->merchant_id && $this->secret_key)) {
                     return false;
                 }
                 return true;
@@ -118,13 +115,13 @@ function woocommerce_collecta_payment_init()
                 $this->generate_settings_html();
                 echo '</table>';
             } else {
-?>
+                ?>
          <div class="inline error"><p><strong>Collecta Payment Gateway Disabled</strong>: <?php
-                echo $this->msg;
-?></p></div>
+echo $this->msg;
+                ?></p></div>
 
           <?php
-            }
+}
 
             // wp_enqueue_script('gtpay_admin_option_js', plugin_dir_url(__FILE__) . 'assets/js/settings.js', array('jquery'), '1.0.1');
         }
@@ -136,59 +133,59 @@ function woocommerce_collecta_payment_init()
                     'title' => __('Enable/Disable', 'collecta'),
                     'type' => 'checkbox',
                     'label' => __('Enable Collecta Payment Module.', 'collecta'),
-                    'default' => 'no'
+                    'default' => 'no',
                 ),
 
                 'title' => array(
                     'title' => __('Title:', 'collecta'),
                     'type' => 'text',
                     'description' => __('This controls the title which the user sees during checkout.', 'collecta'),
-                    'default' => __('Collecta Payment Gateway', 'collecta')
+                    'default' => __('Collecta Payment Gateway', 'collecta'),
                 ),
                 'description' => array(
                     'title' => __('Description:', 'collecta'),
                     'type' => 'textarea',
                     'description' => __('This controls the description which the user sees during checkout.', 'collecta'),
-                    'default' => __('Pay via Collecta', 'collecta')
+                    'default' => __('Pay via Collecta', 'collecta'),
                 ),
-                'collecta_handle' => array(
-                    'title' => __('Handle', 'collecta'),
+                'merchant_id' => array(
+                    'title' => __('Merchant Id', 'collecta'),
                     'type' => 'text',
-                    'description' => __('Enter your Handle without the @', 'collecta')
+                    'description' => __('Enter your merchant Id', 'collecta'),
                 ),
                 'secret_key' => array(
                     'title' => __('Secret Key', 'collecta'),
                     'type' => 'text',
-                    'description' => __('Enter your secret key here', 'collecta')
-                )
+                    'description' => __('Enter your secret key here', 'collecta'),
+                ),
 
             );
         }
         public function get_collecta_args($order)
         {
 
-            $order_total      = $order->get_total();
-            $order_id         = method_exists($order, 'get_id') ? $order->get_id() : $order->id;
-            $txnid            = $order_id . '_' .  uniqid();
-            $redirect_url     = $this->redirect_url;
-            $collecta_cust_id = method_exists($order, 'get_billing_email') ? $order->get_billing_email() : $order->billing_email;
-            $first_name       = method_exists($order, 'get_billing_first_name') ? $order->get_billing_first_name() : $order->billing_first_name;
-            $last_name        = method_exists($order, 'get_billing_last_name') ? $order->get_billing_last_name() : $order->billing_last_name;
-            $customer_phone   = method_exists($order, 'get_billing_phone') ? $order->get_billing_phone() : $order->billing_phone;
-            $customer_name    = $last_name . ' ' . $last_name;
-            $collecta_hash    = $this->collecta_handle . $txnid . $order_total . $this->secret_key;
-			
-            $hash             = hash('sha512', $collecta_hash);
+            $order_total = $order->get_total();
+            $order_id = method_exists($order, 'get_id') ? $order->get_id() : $order->id;
+            $txnid = $order_id . '_' . uniqid();
+            $redirect_url = $this->redirect_url;
+            $email_address = method_exists($order, 'get_billing_email') ? $order->get_billing_email() : $order->billing_email;
+            $first_name = method_exists($order, 'get_billing_first_name') ? $order->get_billing_first_name() : $order->billing_first_name;
+            $last_name = method_exists($order, 'get_billing_last_name') ? $order->get_billing_last_name() : $order->billing_last_name;
+            $customer_phone = method_exists($order, 'get_billing_phone') ? $order->get_billing_phone() : $order->billing_phone;
+            $collecta_hash = number_format($order_total, 2) . $this->merchant_id . $this->secret_key;
+            $hash = hash('sha256', $collecta_hash);
             // collecta Args
-            $collecta_args    = array(
-                'URL' => $this->collecta_handle,
+            $collecta_args = array(
                 'Amount' => $order_total,
-                'Email' => $collecta_cust_id,
-                'TransactionId' => $txnid,
+                'MerchantId' => $this->merchant_id,
                 'Hash' => $hash,
+                'Email' => $collecta_cust_id,
+                'ref' => $txnid,
+                'Validity' => "600",
                 'PhoneNumber' => $customer_phone,
-                'PayerName' => $customer_name,
-                'ReturnURL' => $redirect_url
+                'SurName' => $first_name,
+                'FirstName' => $last_name,
+                'ReturnURL' => $redirect_url,
             );
 
             WC()->session->set('wc_collecta_txn_id', $txnid);
@@ -255,7 +252,7 @@ function woocommerce_collecta_payment_init()
             $order = wc_get_order($order_id);
             return array(
                 'result' => 'success',
-                'redirect' => $order->get_checkout_payment_url(true)
+                'redirect' => $order->get_checkout_payment_url(true),
             );
         }
         function receipt_page($order)
@@ -265,12 +262,15 @@ function woocommerce_collecta_payment_init()
         }
         function check_collecta_response()
         {
-            if (isset($_REQUEST["ResponseCode"]) && isset($_REQUEST["Message"]) && isset($_REQUEST["Status"]) && isset($_REQUEST["TransactionId"])) {
-                $collecta_echo_data = $_REQUEST["TransactionId"];
-                $data               = explode("_", $collecta_echo_data);
-                $wc_order_id        = $data[0];
-                $wc_order_id        = (int) $wc_order_id;
-                $order              = wc_get_order($order_id);
+            if (isset($_REQUEST["Ref"])) {
+                $collecta_echo_data = $_REQUEST["Ref"];
+                $data = explode("_", $collecta_echo_data);
+                $wc_order_id = $data[0];
+                $wc_order_id = (int) $wc_order_id;
+                $order = wc_get_order($order_id);
+                $order_total = $order->get_total();
+                $collecta_hash = number_format($order_total, 2) . $this->merchant_id . $this->secret_key;
+                $hash = hash('sha256', $collecta_hash);
                 try {
                     wc_print_notices();
                     //                  $mert_id = $this->wema_mert_id;
@@ -286,12 +286,15 @@ function woocommerce_collecta_payment_init()
                     //                  $response = curl_exec($ch);
                     //                  $d1 = new SimpleXMLElement($response);
                     //                  $json = json_decode($d1, TRUE);
+                    
+                    $response = $this->QueryResponse($hash, $collecta_echo_data);
+                    $response = json_decode($response);
 
-                    $respond_code = $_REQUEST['Status'];
 
-                    if ($respond_code == "1") {
+                    if ($response->status == "success") {
                         #payment successful
-                        $respond_desc = $_REQUEST['Message'];
+                        if($response->data->IsSuccessful){
+                        $respond_desc = $response->data->FriendlyMessage;
                         $message_resp = "Approved Successful." . "<br>" . $respond_desc . "<br>Transaction Reference: " . $collecta_echo_data;
                         $message_type = "success";
                         $order->payment_complete($collecta_echo_data);
@@ -302,9 +305,21 @@ function woocommerce_collecta_payment_init()
                         $redirect_url = $this->get_return_url($order);
 
                         wc_add_notice($message_resp, "success");
+
+                        }else{
+                        #payment failed
+                        $respond_desc = $response->data->FriendlyMessage;
+                        $message_resp = "Your transaction was not successful." . "<br>Reason: " . $respond_desc . "<br>Transaction Reference: " . $collecta_echo_data;
+                        $message_type = "error";
+                        $order->add_order_note('collecta payment failed: ' . $message_resp);
+                        $order->update_status('cancelled');
+                        $redirect_url = $order->get_cancel_order_url();
+                        wc_add_notice($message_resp, "error");
+                        }
+                        
                     } else {
                         #payment failed
-                        $respond_desc = $_REQUEST['Message'];
+                        $respond_desc = $response->data->FriendlyMessage;
                         $message_resp = "Your transaction was not successful." . "<br>Reason: " . $respond_desc . "<br>Transaction Reference: " . $collecta_echo_data;
                         $message_type = "error";
                         $order->add_order_note('collecta payment failed: ' . $message_resp);
@@ -313,18 +328,15 @@ function woocommerce_collecta_payment_init()
                         wc_add_notice($message_resp, "error");
                     }
 
-
                     $notification_message = array(
                         'message' => $message_resp,
-                        'message_type' => $message_type
+                        'message_type' => $message_type,
                     );
 
                     wp_redirect(html_entity_decode($redirect_url));
                     exit;
-                }
-                catch (Exception $e) {
+                } catch (Exception $e) {
                     $order->add_order_note('Error: ' . $e->getMessage());
-
                     wc_add_notice($e->getMessage(), "error");
                     $redirect_url = $order->get_cancel_order_url();
                     wp_redirect(html_entity_decode($redirect_url));
@@ -332,16 +344,31 @@ function woocommerce_collecta_payment_init()
                 }
             }
 
-
-
         }
+        function QueryResponse($hash,$transactionRef){
+            $hash = get_Hash($Amount);
+            $headers = array(
+                'Hash:'.$hash,
+                'Accept: application/json',
+                );
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, $this->confirm_url.'?transactionRef='.$transactionRef);
+                curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+                curl_setopt($ch, CURLOPT_HEADER, 0);
+                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET"); 
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                $server_output = curl_exec($ch);
+                curl_close ($ch);
+                return $server_output;
+            }
+
         public function display_transaction_id()
         {
 
             if (get_query_var('order-pay')) {
 
                 $order_id = absint(get_query_var('order-pay'));
-                $order    = wc_get_order($order_id);
+                $order = wc_get_order($order_id);
 
                 $payment_method = method_exists($order, 'get_payment_method') ? $order->get_payment_method() : $order->payment_method;
 
@@ -354,28 +381,21 @@ function woocommerce_collecta_payment_init()
             }
         }
 
-
-
-
-
-
-
-
     }
     function wc_collecta_message()
     {
 
         if (get_query_var('order-received')) {
 
-            $order_id       = absint(get_query_var('order-received'));
-            $order          = wc_get_order($order_id);
+            $order_id = absint(get_query_var('order-received'));
+            $order = wc_get_order($order_id);
             $payment_method = method_exists($order, 'get_payment_method') ? $order->get_payment_method() : $order->payment_method;
 
             if (is_order_received_page() && ('collecta' == $payment_method)) {
 
                 $notification = get_post_meta($order_id, '_collecta_wc_message', true);
 
-                $message      = isset($notification['message']) ? $notification['message'] : '';
+                $message = isset($notification['message']) ? $notification['message'] : '';
                 $message_type = isset($notification['message_type']) ? $notification['message_type'] : '';
 
                 delete_post_meta($order_id, '_collecta_wc_message');
