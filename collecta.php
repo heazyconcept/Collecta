@@ -9,7 +9,7 @@ Author URI: http://www.osigla.com.ng/
 if (!defined('ABSPATH')) {
     exit;
 }
-
+//http://localhost:8585/docconcept/wc-api/WC_collecta_payment/
 add_action('plugins_loaded', 'woocommerce_collecta_payment_init', 0);
 
 function woocommerce_collecta_payment_init()
@@ -172,14 +172,14 @@ echo $this->msg;
             $first_name = method_exists($order, 'get_billing_first_name') ? $order->get_billing_first_name() : $order->billing_first_name;
             $last_name = method_exists($order, 'get_billing_last_name') ? $order->get_billing_last_name() : $order->billing_last_name;
             $customer_phone = method_exists($order, 'get_billing_phone') ? $order->get_billing_phone() : $order->billing_phone;
-            $collecta_hash = number_format($order_total, 2) . $this->merchant_id . $this->secret_key;
+            $collecta_hash = $order_total . $this->merchant_id . $this->secret_key;
             $hash = hash('sha256', $collecta_hash);
             // collecta Args
             $collecta_args = array(
                 'Amount' => $order_total,
                 'MerchantId' => $this->merchant_id,
                 'Hash' => $hash,
-                'Email' => $collecta_cust_id,
+                'EmailAddress' => $email_address,
                 'ref' => $txnid,
                 'Validity' => "600",
                 'PhoneNumber' => $customer_phone,
@@ -262,14 +262,14 @@ echo $this->msg;
         }
         function check_collecta_response()
         {
-            if (isset($_REQUEST["Ref"])) {
-                $collecta_echo_data = $_REQUEST["Ref"];
+            if (isset($_REQUEST["Ref"]) &&  isset($_REQUEST['MerchantRef'])) {
+                $collecta_echo_data = $_REQUEST["MerchantRef"];
                 $data = explode("_", $collecta_echo_data);
                 $wc_order_id = $data[0];
                 $wc_order_id = (int) $wc_order_id;
                 $order = wc_get_order($order_id);
                 $order_total = $order->get_total();
-                $collecta_hash = number_format($order_total, 2) . $this->merchant_id . $this->secret_key;
+                $collecta_hash = $order_total. $this->merchant_id . $this->secret_key;
                 $hash = hash('sha256', $collecta_hash);
                 try {
                     wc_print_notices();
