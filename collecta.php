@@ -9,7 +9,7 @@ Author URI: http://www.osigla.com.ng/
 if (!defined('ABSPATH')) {
     exit;
 }
-//http://localhost:8585/docconcept/wc-api/WC_collecta_payment/
+
 add_action('plugins_loaded', 'woocommerce_collecta_payment_init', 0);
 
 function woocommerce_collecta_payment_init()
@@ -59,7 +59,7 @@ function woocommerce_collecta_payment_init()
             ));
 
             // Payment listener/API hook
-            add_action('woocommerce_api_wc_collecta_gateway', array(
+            add_action('woocommerce_api_wc_collecta_payment', array(
                 $this,
                 'check_collecta_response',
             ));
@@ -262,12 +262,15 @@ echo $this->msg;
         }
         function check_collecta_response()
         {
+            
             if (isset($_REQUEST["Ref"]) &&  isset($_REQUEST['MerchantRef'])) {
+               
                 $collecta_echo_data = $_REQUEST["MerchantRef"];
+                $transactionReference = $_REQUEST["Ref"];
                 $data = explode("_", $collecta_echo_data);
                 $wc_order_id = $data[0];
                 $wc_order_id = (int) $wc_order_id;
-                $order = wc_get_order($order_id);
+                $order = wc_get_order($wc_order_id);
                 $order_total = $order->get_total();
                 $collecta_hash = $order_total. $this->merchant_id . $this->secret_key;
                 $hash = hash('sha256', $collecta_hash);
@@ -287,10 +290,8 @@ echo $this->msg;
                     //                  $d1 = new SimpleXMLElement($response);
                     //                  $json = json_decode($d1, TRUE);
                     
-                    $response = $this->QueryResponse($hash, $collecta_echo_data);
-                    $response = json_decode($response);
-
-
+                    $response = $this->QueryResponse($hash, $transactionReference);
+                    $response = json_decode($response['body']);
                     if ($response->status == "success") {
                         #payment successful
                         if($response->data->IsSuccessful){
@@ -346,20 +347,26 @@ echo $this->msg;
 
         }
         function QueryResponse($hash,$transactionRef){
-            $hash = get_Hash($Amount);
-            $headers = array(
-                'Hash:'.$hash,
-                'Accept: application/json',
+            
+                $url = $this->confirmurl.'?transactionRef='.$transactionRef;
+                $args = array(
+                    'headers'  => array(
+                        'Hash' => $hash,
+                        'Accept' => 'application/json',
+                        )
                 );
-                $ch = curl_init();
-                curl_setopt($ch, CURLOPT_URL, $this->confirm_url.'?transactionRef='.$transactionRef);
-                curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-                curl_setopt($ch, CURLOPT_HEADER, 0);
-                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET"); 
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                $server_output = curl_exec($ch);
-                curl_close ($ch);
-                return $server_output;
+                // return $args;
+                $response = wp_remote_get( $url, $args ); 
+                return $response;
+                // $ch = curl_init();
+                // curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+                // curl_setopt($ch, CURLOPT_HEADER, 0);
+                // curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET"); 
+                // curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                // $server_output = curl_exec($ch);
+                // curl_close ($ch);
+                // return $server_output;
+
             }
 
         public function display_transaction_id()
