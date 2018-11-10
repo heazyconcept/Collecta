@@ -27,7 +27,7 @@ function woocommerce_collecta_payment_init()
             $this->collecta_payment_errors = new WP_Error();
 
             $this->id = 'collecta';
-            $this->icon = apply_filters('woocommerce_collecta_payment_icon', plugins_url('images/logo.png', __FILE__));
+            $this->icon = apply_filters('woocommerce_collecta_payment_icon', plugins_url('images/logo-small.png', __FILE__));
             $this->method_title = 'collectapayment';
             $this->has_fields = false;
             // Load the form fields.
