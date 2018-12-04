@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: collecta - WooCommerce Gateway
-Description: Extends WooCommerce by Adding the CollectaPay.
+Description: Extends WooCommerce by Adding the collecta payment gateway.
 Version: 1
 Author: Ezekiel Fadipe, O'sigla Resources
 Author URI: http://www.osigla.com.ng/
@@ -27,7 +27,7 @@ function woocommerce_collecta_payment_init()
             $this->collecta_payment_errors = new WP_Error();
 
             $this->id = 'collecta';
-            $this->icon = apply_filters('woocommerce_collecta_payment_icon', plugins_url('images/collecta-sign.png', __FILE__));
+            $this->icon = apply_filters('woocommerce_collecta_payment_icon', plugins_url('images/logo-small.png', __FILE__));
             $this->method_title = 'collectapayment';
             $this->has_fields = false;
             // Load the form fields.
@@ -108,7 +108,7 @@ function woocommerce_collecta_payment_init()
         }
         public function admin_options()
         {
-            echo '<h3>' . __('CollectaPay', 'collecta') . '</h3>';
+            echo '<h3>' . __('Collecta Payment Gateway', 'collecta') . '</h3>';
             echo '<p>' . __('Collecta is most popular payment gateway for online shopping in Nigeria') . '</p>';
             if ($this->is_valid_for_use()) {
                 echo '<table class="form-table">';
@@ -116,7 +116,7 @@ function woocommerce_collecta_payment_init()
                 echo '</table>';
             } else {
                 ?>
-         <div class="inline error"><p><strong>CollectaPay Disabled</strong>: <?php
+         <div class="inline error"><p><strong>Collecta Payment Gateway Disabled</strong>: <?php
 echo $this->msg;
                 ?></p></div>
 
@@ -140,7 +140,7 @@ echo $this->msg;
                     'title' => __('Title:', 'collecta'),
                     'type' => 'text',
                     'description' => __('This controls the title which the user sees during checkout.', 'collecta'),
-                    'default' => __('CollectaPay', 'collecta'),
+                    'default' => __('Collecta Payment Gateway', 'collecta'),
                 ),
                 'description' => array(
                     'title' => __('Description:', 'collecta'),
@@ -185,7 +185,7 @@ echo $this->msg;
                 'PhoneNumber' => $customer_phone,
                 'SurName' => $first_name,
                 'FirstName' => $last_name,
-                'TransType' => 'Shakarafab Purchase',
+                'ReturnURL' => $redirect_url,
             );
 
             WC()->session->set('wc_collecta_txn_id', $txnid);
